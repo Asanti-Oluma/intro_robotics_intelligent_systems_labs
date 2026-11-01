@@ -4,6 +4,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
 from lab_interfaces.msg import ObstacleInfo
+from my_robot_interfaces.msg import RobotStatus
 
 
 class TurnAway(Node):
@@ -12,7 +13,9 @@ class TurnAway(Node):
         super().__init__("turn_away")
         self.declare_parameter("forward_speed", 0.2)
         self.declare_parameter("turn_speed", 0.5)
+
         self.cmd_vel = self.create_publisher(Twist, "cmd_vel", 10)
+        self.status_pub = self.create_publisher(RobotStatus, "robot_status", 10)
         self.create_subscription(ObstacleInfo, "obstacle", self.on_obstacle, 10)
 
     def on_obstacle(self, msg):
@@ -27,6 +30,11 @@ class TurnAway(Node):
         else:
             cmd.linear.x = forward_speed
         self.cmd_vel.publish(cmd)
+
+        status = RobotStatus()
+        status.state = "turning" if msg.too_close else "forward"
+        status.obstacle_distance = msg.distance
+        self.status_pub.publish(status)
 
 
 def main():
